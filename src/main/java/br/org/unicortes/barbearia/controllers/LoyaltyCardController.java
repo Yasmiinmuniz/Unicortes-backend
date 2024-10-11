@@ -24,11 +24,10 @@ public class LoyaltyCardController {
     @Autowired
     private LoyaltyCardService loyaltyCardService;
 
-    @GetMapping("/admin")
+    @GetMapping
     @PreAuthorize("hasRole('BARBER, ADMIN')")
     public ResponseEntity<List<LoyaltyCardDTO>> getAllLoyaltyCards() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        System.out.println(auth.getAuthorities());
         List<LoyaltyCardDTO> loyaltyCards = loyaltyCardService.getAllLoyaltyCards().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());

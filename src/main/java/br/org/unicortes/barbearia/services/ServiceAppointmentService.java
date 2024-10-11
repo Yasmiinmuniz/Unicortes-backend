@@ -2,18 +2,13 @@ package br.org.unicortes.barbearia.services;
 
 import br.org.unicortes.barbearia.dtos.ServiceAppointmentDTO;
 import br.org.unicortes.barbearia.enums.ServiceAppointmentStatus;
-import br.org.unicortes.barbearia.models.ServiceAppointment;
-import br.org.unicortes.barbearia.models.Servico;
-import br.org.unicortes.barbearia.models.Barber;
-import br.org.unicortes.barbearia.models.Usuario;
-import br.org.unicortes.barbearia.repositories.ServiceAppointmentRepository;
-import br.org.unicortes.barbearia.repositories.ServicoRepository;
-import br.org.unicortes.barbearia.repositories.BarberRepository;
-import br.org.unicortes.barbearia.repositories.UsuarioRepository;
+import br.org.unicortes.barbearia.models.*;
+import br.org.unicortes.barbearia.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,17 +18,20 @@ public class ServiceAppointmentService {
     private final ServiceAppointmentRepository serviceAppointmentRepository;
     private final ServicoRepository servicoRepository;
     private final BarberRepository barberRepository;
-
+    private final ClientRepository clientRepository;
     private final UsuarioRepository usuarioRepository;
+    private final AvailableTimeRepository availableTimeRepository;
 
     @Autowired
     public ServiceAppointmentService(ServiceAppointmentRepository serviceAppointmentRepository,
                                      ServicoRepository servicoRepository,
-                                     BarberRepository barberRepository, UsuarioRepository usuarioRepository) {
+                                     BarberRepository barberRepository, UsuarioRepository usuarioRepository, ClientRepository clientRepository, AvailableTimeRepository availableTimeRepository) {
         this.serviceAppointmentRepository = serviceAppointmentRepository;
         this.servicoRepository = servicoRepository;
         this.barberRepository = barberRepository;
         this.usuarioRepository = usuarioRepository;
+        this.clientRepository=clientRepository;
+        this.availableTimeRepository=availableTimeRepository;
     }
 
     public List<ServiceAppointment> findAll() {
@@ -44,13 +42,24 @@ public class ServiceAppointmentService {
         return serviceAppointmentRepository.findById(id);
     }
 
-    public List<ServiceAppointment> findByBarberId(Long barberId) {
-        Optional<Usuario> user = this.usuarioRepository.findById(barberId);
-        Barber barber = new Barber();
+    public List<ServiceAppointment> findByBarberId(Long id) {
+        Optional<Usuario> user = this.usuarioRepository.findById(id);
+        Optional<Barber> barber = Optional.of(new Barber());
+        barber=this.barberRepository.findById(id);
+
+        List<ServiceAppointment>appointments=serviceAppointmentRepository.findByBarberId(barber);
+        return appointments;
+    }
+    public List<ServiceAppointment> findByClientId(Long id) {
+        Optional<Usuario> user = this.usuarioRepository.findById(id);
+        Optional<Client> client = Optional.of(new Client());
+        List<ServiceAppointment>appointments=new ArrayList<>();
         if(user.isPresent()){
-            barber=this.barberRepository.findByName(user.get().getName());
+            client=this.clientRepository.findById(id);
+            appointments=serviceAppointmentRepository.findByClientName(String.valueOf(client));
         }
-        return serviceAppointmentRepository.findByBarberId(barber.getId());
+
+        return appointments;
     }
 
     public List<ServiceAppointment> findByStatus(ServiceAppointmentStatus status) {
@@ -126,19 +135,27 @@ public class ServiceAppointmentService {
         ServiceAppointment serviceAppointment = new ServiceAppointment();
         serviceAppointment.setId(dto.getId());
 
-        Optional<Servico> serviceOpt = servicoRepository.findById(dto.getServiceId());
+        Optional<Servico> serviceOpt = servicoRepository.findById(dto.getService());
         if (serviceOpt.isPresent()) {
             serviceAppointment.setService(serviceOpt.get());
         } else {
-            throw new IllegalArgumentException("Serviço não encontrado para o ID: " + dto.getServiceId());
+            throw new IllegalArgumentException("Serviço não encontrado para o ID: " + dto.getService());
         }
 
-        Optional<Barber> barberOpt = barberRepository.findById(dto.getBarberId());
+        Optional<Barber> barberOpt = barberRepository.findById(dto.getBarber());
         if (barberOpt.isPresent()) {
             serviceAppointment.setBarber(barberOpt.get());
         } else {
-            throw new IllegalArgumentException("Barbeiro não encontrado para o ID: " + dto.getBarberId());
+            throw new IllegalArgumentException("Barbeiro não encontrado para o ID: " + dto.getBarber());
         }
+
+        Optional<AvailableTime> availableTimeOpt = availableTimeRepository.findById(dto.getAvailableTime());
+        if (availableTimeOpt.isPresent()) {
+            serviceAppointment.setAvailableTime(availableTimeOpt.get());
+        } else {
+            throw new IllegalArgumentException("Horário disponível não encontrado para o ID: " + dto.getAvailableTime());
+        }
+
 
         serviceAppointment.setClientName(dto.getClientName());
         serviceAppointment.setAppointmentDateTime(dto.getAppointmentDateTime());
@@ -155,11 +172,12 @@ public class ServiceAppointmentService {
 
         ServiceAppointmentDTO dto = new ServiceAppointmentDTO();
         dto.setId(entity.getId());
-        dto.setServiceId(entity.getService().getId());
-        dto.setBarberId(entity.getBarber().getId());
+        dto.setService(entity.getService().getId());
+        dto.setBarber(entity.getBarber().getId());
         dto.setClientName(entity.getClientName());
         dto.setAppointmentDateTime(entity.getAppointmentDateTime());
         dto.setStatus(entity.getStatus());
+        dto.setAvailableTime(entity.getId());
         dto.setAvailable(entity.isAvailable());
 
         return dto;

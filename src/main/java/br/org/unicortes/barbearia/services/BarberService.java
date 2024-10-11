@@ -7,11 +7,16 @@ import br.org.unicortes.barbearia.repositories.BarberRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class BarberService {
     @Autowired
     private BarberRepository barberRepository;
+
+    public Optional<Barber> getBarber(long id) {
+        return barberRepository.findById(id);
+    }
 
     public Barber createBarber(Barber barber) {
         if (barberRepository.existsByName(barber.getName())) {
@@ -42,10 +47,5 @@ public class BarberService {
 
     public List<Barber> listAllBarbers() {
         return barberRepository.findAll();
-    }
-
-    public Barber getBarberById(Long id) {
-        return barberRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(id));
     }
 }

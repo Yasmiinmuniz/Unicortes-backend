@@ -92,9 +92,9 @@ public class ServiceAppointmentController {
         }
     }
 
-    @PutMapping("/{id}/status")
+    @PutMapping("/{id}/{status}")
     @PreAuthorize("hasRole('BARBER, ADMIN')")
-    public ResponseEntity<ServiceAppointmentDTO> updateAppointmentStatus(@PathVariable Long id, @RequestParam ServiceAppointmentStatus status) {
+    public ResponseEntity<ServiceAppointmentDTO> updateAppointmentStatus(@PathVariable Long id, @PathVariable ServiceAppointmentStatus status) {
         try {
             ServiceAppointment updatedAppointment = serviceAppointmentService.updateAppointmentStatus(id, status);
             return ResponseEntity.ok(serviceAppointmentService.convertToDTO(updatedAppointment));
@@ -132,4 +132,12 @@ public class ServiceAppointmentController {
             @RequestParam LocalDateTime endDateTime) {
         return serviceAppointmentService.getAppointmentsByBarberAndDateTimeRange(barberId, startDateTime, endDateTime);
     }
+
+    @GetMapping("/client/{clientId}")
+    @PreAuthorize("hasRole('CLIENT, BARBER, ADMIN')")
+    public ResponseEntity<List<ServiceAppointment>> getAppointmentsByClientName(@PathVariable Long clientId) {
+        List<ServiceAppointment> appointments = serviceAppointmentService.findByClientId(clientId);
+        return ResponseEntity.ok(appointments);
+    }
+
 }
